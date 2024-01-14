@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>DIKTÁTOR</title>
+<script type="text/javascript">
+/***** DIKTÁTOR  (c) 1984 ENTERSOFT LTD.  Magyar szöveg: Koch Tibor *****/
+/* http://www.ep128.hu/Games/Dictator.htm                               */
+
+function RND(n)   {           /***** Véletlen szám. 0<= RND <n      *****/
+    return Math.floor(Math.random()*n);
+} /* RND() */
+
+function SET(s,i,c)   {       /***** Értékadás egy karakternek.     *****/
+    var S = "";
+    if (0<i)   S += s.substr(0,i);
+    S += c.toString() + s.substr(i+1);
+    return S;
+} /* SET() */
+
+function ADD(s,i,a)   {       /***** Számjegy növelése.             *****/
+    var d = parseInt(s.charAt(i)) + a;
+    if (d<0)   d = 0;                   /* Alulcsordulás.               */
+    if (9<d)   d = 9;                   /* Túlcsordulás.                */
+    return SET(s,i,d);
+} /* ADD() */
+
+function MUL(s,n)   {         /***** String többszörözése.          *****/
+    var S = "";
+    for (var i=0; i<n; i++)   S += s;
+    return S;
+} /* MUL() */
+
+/* Népszerûség Erõ */
+var G_str = new Array( null,
+    "76::!A hadsereg",          /* 1 */
+    "76::%A parasztok",         /* 2 */
+    "76::'A földesurak",        /* 3 */
+    "06--&A gerillák",          /* 4 */
+    "76--&A leftotoiak",        /* 5 */
+    "76--*A titkosrendõrség",   /* 6 */
+    "7---%Az oroszok",          /* 7 */
+    "7---&Az amerikaiak"        /* 8 */
+);
+
+var D_str = new Array(
+    /* 0-23 REQUEST */
+    "NMHQJLMMMMMPKLMMMVezesse be a sorozást",
+    "NMMPMJMMMMMNMLMMMEngedélyezze a földek katonai felhasználását",
+    "NCMPLNMLMLMNMNIMMEngedélyezze az összes gerillatámaszpont megtámadását",
+    "NEMPLMMIMLMNMNKMMEngedélyezze a leftotoi gerillatámaszpontok megtámadását",
+    "NMMQONMMIMMNMNMMJRúgja ki a titkosrendõrség fõnökét",
+    "NMMPMMMLMIOMMMMMMRúgja ki az orosz katonai tanácsadókat",
+    "NMDQMLMMMMMOLLLMMEmelje a katonák zsoldját",
+    "NAMQLLMLLMMPLLKLMVegyen több fegyvert és lõszert",
+    "NMMLONMMMMMLMMLMMSzüntesse meg a katonai felvonulásokat",
+    "NMMMQIMNMMMMOLMMMNövelje a minimálbéreket",
+    "NMPNQOMMIMMNNNNMJCsökkentse a titkosrendõrség hatalmát",
+    "NMMMPKMKMMMMOKMMMUtasítsa ki a leftotoi vendégmunkasokat",
+    "NCELQKMOLNMMNLLMMVezesse be az ingyenes közoktatást",
+    "NMMMQJMNLNMMPJMMLEngedélyezze a szakszervezeteket",
+    "NMMLQKMNLMMMOLLMMEngedje szabadon a bebörtönzött parasztvezért",
+    "NMSMPLMMMMMMMMLMMVezesse be a nyilvános lottót",
+    "NMMKMPMMMMMLMMMMMSzüntesse meg a földek katonai felhasználását",
+    "NMMMIQMLMLMMKONMMCsökkentse a minimálbéreket",
+    "NWHMMPMNMOIMMNMMMÁllamosítsa az amerikai érdekeltségeket",
+    "NMRMMPMJMLMMNOMLMVámoljon meg minden leftotoi árut",
+    "NMQNNPMMIMMNMNNMKCsökkentse a titkosrendõrség költségvetését",
+    "NMHMMQMMMMMMMOMMMCsökkentse a súlyos földadót",
+    "NMMKLPMMMMMLLNNMMVezényelje a katonákat a földekre dolgozni",
+    "NACNNPMJMONMMPMKMÉpíttessen egy nagy öntözõrendszert",
+    /* 24-42 kedvezni egy csoportnak */
+    "NMMQLLMMLMMNMMLMLNevezze ki a hadsereg fõnökét alelnökké",
+    "NLILQNMOMNMMMMLMMIngyen klinikákat állitson fel a munkásoknak",
+    "NMMLKQMMLLMLLOMMLAdjon a földbirtokosoknak helyi hatalmat",
+    "NRMKMMMQMKNLMMLPMAdjon el amerikai fegyvereket Leftotonak",
+    "NYMMMLMLMKPMMMMMMAdja el amerikai cégeknek a bányászati jogokat",
+    "NMWKMMMMMPJMMMMNMAdjon bérbe haditengerészeti támaszpontot az oroszoknak",
+    "NMENPPMMMMMLMMLMMCsökkentse az általános adószintet",
+    "NEMPPPMMMMMMMMLMMIndítson nagy népszerûségi kampányt",
+    "NMUPPPMMDMMONNNMDTeljesen szüntesse meg a titkosrendõrség hatalmát",
+    "NMGJJJMMUMMLLLLMUSzámottevõen növelje a titkosrendõrség hatalmát",
+    "NIMKLLMMLMMKMMMMLNövelje a testõrségét",
+    "NAMIIJMMKMMMMMMMMVásároljon egy helikoptert menekülés esetére",
+    "NMMMMMMMMMMMMMMMMÁtutalás svájci bankszámlára",
+    "NMMMMMMMMMMMMMMMMAz oroszoktól kölcsönt kérni",
+    "NMMMMMMMMMMMMMMMMAz amerikaiaktól segélyt kérni",
+    "NZMNNPMGMKMMMMMMMÁllamosítsa a leftotoi cégeket",
+    "NHMPMMMJMLMRMMKKLVegyen nehéztüzérséget a seregnek",
+    "NMMMPLMMLMMMRLPMLEngedélyezze a parasztok szabad költözködését",
+    "NMMLLPMMLMMLLRLMLEngedélyezze a földbirtokosoknak magánhadsereg szervezését",
+    /* 43- hírek */
+    "NMMMMMMMIMMMMMQMIAz elnök elvesztette a rendõrségi aktákat",
+    "NMMMMMMMMMMLMMVMMKuba gerillákat képez ki és fegyverez fel",
+    "NMMMMMMMMMMIMMOMNBaleset. Felrobbant egy laktanya",
+    "NMMMMMMMMMMMMJMKMA banán ára 98%-kal csökkent",
+    "NMMMMMMMMMMMMOMIMNagy földrengés Leftotoban",
+    "NMMMMMMMMMMMILKMMJárvány pusztítja a parasztokat"
+);
+
+    var MTH =    0;                     /* Eltelt hónapok száma.        */
+    var BK  = 1000;                     /* Államkincstár.               */
+    var MPY =   60;                     /* Havi +költségek / -bevételek.*/
+    var SW  =    0;                     /* Svájci bankszámla.           */
+    var PC  =    0;
+    var ST  =    4;                     /* Saját erõ.                   */
+    var STR =   10;                     /* Forradalmi erõk.             */
+    var LOW;
+    var R = -1;                         /* Kérelmezés (D_str) indexe.   */
+    var CST, MCST;                      /* Döntés egyszeri/havi költsége*/
+    var ip = -2;                        /* Utasítás-számláló.           */
+    var go = 0;                         /* Game Over flag.              */
+    var H;
+
+function LoadCB()   {
+    ACCOUNT();
+    DO(0);
+} /* LoadCB() */
+
+function IO(btn,b,t)   {                /***** Bevitel nyomógombról.*****/
+    document.getElementById("Bold").innerHTML = b;
+    document.getElementById("Text").innerHTML = t;
+    document.getElementById("BY").style.visibility = (btn.indexOf("Y")==-1)?"hidden":"visible";
+    document.getElementById("OK").style.visibility = (btn.indexOf("O")==-1)?"hidden":"visible";
+    document.getElementById("BN").style.visibility = (btn.indexOf("N")==-1)?"hidden":"visible";
+    ip++;
+} /* IN() */
+
+function JR(jr)   {                     /***** Relatív ugrás.       *****/
+    ip += jr;
+    DO(0);
+} /* JR() */
+
+function DO(rc)   {
+    if (ip==22)   ip = 1;
+    if (go)       ip = 1000;
+    var GSP = document.getElementById("Gsp");
+    GSP.style.visibility = "hidden";
+
+    switch (ip)   {
+        case -2: START1();   break;
+        case -1: START2();   break;
+        case  0: REPORT(2);  break;     /* Kezdõ rendõrségi jelentés.   */
+        case  1: NXTMON();   break;     /* Hónapváltás.                 */
+        case  2: REPORT(0);  break;     /* Jelentés államcsõd után.     */
+        case  3: REQUEST();  break;     /* Kérelmezés.                  */
+        case  4:                        /* Válasz a kérelemre.          */
+            TRANSFER(rc);
+            ASSASSIN();                 /* Merénylet.                   */
+            break;
+        case  5: WARSMO();   break;     /* Háború Leftotóval.           */
+        case  6: ASKREP();   break;     /* Rendõrségi jelentés kérése.  */
+        case  7: REPORT(rc); break;     /* Rendõrségi jelentés.         */
+        case  8: DECSN1();   break;     /* Elnöki döntés.               */
+        case  9: DECSN2();   break;     /* Döntéshozatal.               */
+        case 10: DECSN3();   break;     /* Tanácsok a döntéshez.        */
+        case 11: DECSN4(rc); break;     /* A döntés végrehajtása.       */
+        case 12: ASKREP();   break;     /* Rendõrségi jelentés kérése.  */
+        case 13: REPORT(rc); break;     /* Rendõrségi jelentés.         */
+        case 14: NEWS();     break;     /* Híradás.                     */
+        case 15: REVOL1();   break;     /* Forradalom.                  */
+        case 16: REVOL2(rc); break;     /* Forradalom: menekülés.       */
+        case 17: REVOL3();   break;     /* Forradalom: harc.            */
+        case 18: REVOL4();   break;
+        case 19: REVOL5(rc); break;
+        case 20: ASKREP();   break;     /* Rendõrségi jelentés kérése.  */
+        case 21: REPORT(rc); break;     /* Rendõrségi jelentés.         */
+        case 1000: GMOVER(go);        break;      /* Játék vége.        */
+        case 1001: location.reload(); break;
+    }
+} /* DO() */
+
+function START1()   {
+    var bld = "DIKTÁTOR";
+    var txt = "Nyomj meg egy gombot és <b>DIKTÁTOR</b> leszel <b>RITIMBA</b> Köztársaságban!";
+    IO("OK",bld,txt);
+} /* START1() */
+
+function START2()   {
+    var bld = "Üdvözöljük hivatalában!";
+    var txt = "Szeretett országunk, RITIMBA eddigi legjobb DIKTÁTORÁNAK legmagasabb pontszáma: 0.<br/>"
+            + "Minthogy ez az Ön elsõ próbálkozása, minden bizonnyal jobbat ér el.";
+    IO("OK",bld,txt);
+} /* START2() */
+
+function ACCOUNT()   {        /***** Pénzügyi adatok kijelzése.     *****/
+    document.getElementById("MTH").innerHTML = MTH;
+    document.getElementById("BK").innerHTML  = 1000*BK;
+    document.getElementById("MPY").innerHTML = 1000*MPY;
+    document.getElementById("SW").innerHTML  = 1000*SW;
+} /* ACCOUNT() */
+
+function NXTMON()   {                   /***** Következõ hónap.     *****/
+    if (MTH && BK>0)   BK -= MPY;       /* Havi költség elszámolása.    */
+    MTH++;                              /* Hónapok számlálása.          */
+    LOW = RND(3)+2;
+    STR = RND(3)+10;
+    ACCOUNT();                          /* Vagyon kijelzése.            */
+    if (BK<0)   {
+        BANKRUPT();                     /* Államcsõd?                   */
+        return;
+    }
+    JR(2);
+} /* NXTMON() */
+
+function BANKRUPT()   {       /***** Államcsõd.                     *****/
+    var bld = "A kincstár tönkrement!";
+    var txt = "Az Ön népszerûsége a hadsereg és a titkosrendõrség körében esni fog.<br/>"
+            + " A rendõrség és az Ön ereje csökkenni fog.";
+    G_str[1] = ADD(G_str[1],0,-1);      /* Hadsereg népszerûség.        */
+    G_str[6] = ADD(G_str[6],0,-1);      /* Titkosrendõrség népszerûség. */
+    G_str[6] = ADD(G_str[6],1,-1);      /* Titkosrendõrség erõ.         */
+    if (ST>0)   ST--;                   /* Saját erõ csökken.           */
+    IO("OK",bld,txt);
+} /* BANKRUPT() */
+
+function ASKREP()   {         /***** Jelentés kérése.               *****/
+    var bld = "A titkosrendõrség jelentése";
+    var nsz = G_str[6].charAt(0);       /* Népszerûség a rendõrségnél.  */
+    var ero = G_str[6].charAt(1);       /* A rendõrség ereje.           */
+    if (BK<=0 || nsz<=LOW || ero<=LOW)   {        /* Nem elérhetõ.      */
+        JR(1);
+        return;
+    }
+    var txt = "1000$-ba kerül. Kell?";
+    IO("YN",bld,txt);
+} /* ASKREP() */
+
+function REPORT(rc)   {       /***** A titkosrendõrség jelentése.   *****/
+    if (rc==-1)   {                     /*** Nem kell a jelentés.     ***/
+        JR(1);
+        return;
+    }
+    var bld = "A titkosrendõrség jelentése";
+    var txt = "";
+    var nsz = G_str[6].charAt(0);       /* Népszerûség a rendõrségnél.  */
+    var ero = G_str[6].charAt(1);       /* A rendõrség ereje.           */
+    if (rc==1)   {                      /* Fizetõs rendõrségi jelentés. */
+        rc = 2;                         /* Teljes értékû jelentés.      */
+        BK--;                           /* 1000$-ba kerül.              */
+        ACCOUNT();                      /* Pénzügyi adatok kijelzése.   */
+    }
+    if (rc==0)   {                      /*** Nem elérhetõ a jelentés. ***/
+        txt = "Nem elérhetõ.<br/>";
+        if (BK<=0)      txt += "Önnek nincs rá pénze<br/>";
+        if (nsz<=LOW)   txt += "Az Ön népszerûsége a mi körünkben: "+nsz+"<br/>";
+        if (ero<=LOW)   txt += "A rendõrség ereje: "+ero+"<br/>";
+    }
+    if (rc==2)   {                      /*** Teljes értékû jelentés.  ***/
+        var GSP = document.getElementById("Gsp");
+        GSP.style.visibility = "visible";
+        for (var a=1; a<=8; a++)   {
+            var nsz = G_str[a].charAt(0);
+            var ero = G_str[a].charAt(1);
+            GSP.rows[a].cells[0].innerHTML = "<span class='small'>"+MUL("&#x1F7E0;",nsz)+"</span>";
+            GSP.rows[a].cells[2].innerHTML = "<span class='small'>"+MUL("&#x1F7E2;",ero)+"</span>";
+        }
+        txt  = "Az Ön ereje: "        + ST + "<br/>";
+        txt += "A forradalmi erõké: " + STR;
+    }
+    IO("OK",bld,txt);
+} /* REPORT() */
+
+function PLOT()   {
+    if (MTH<=2)   return;
+    for (var i=1; i<=3; i++)   {
+        G_str[i] = SET(G_str[i],2,":");
+        G_str[i] = SET(G_str[i],3,":");
+    }
+    if (MTH<PC)   return;
+    for (var a=1; a<=3; a++)   {
+        var a0 = G_str[a].charAt(0);
+        var a1 = G_str[a].charAt(1);
+        if (a0>LOW)   continue;
+        G_str[a] =  SET(G_str[a],2,"A");
+        for (var p=1; p<=6; p++)   {
+            var p0 = G_str[p].charAt(0);
+            var p1 = G_str[p].charAt(1);
+            if (a==p || p0>LOW)   continue;
+            if (p1+a1>=STR)   {
+                G_str[a] =  SET(G_str[a],2,"R");
+                G_str[a] =  SET(G_str[a],3,p);
+                break;
+            }
+        }
+    }
+} /* PLOT() */
+
+function RNDEVT(b,c,d)   {
+    var R = -1;
+    var nr = 0;                         /* Hány szabad kérelmezés van?  */
+    for (var i=0; i<c; i++)   {
+        if (D_str[b+i].charAt(0)=="N")   nr++;
+    }
+    if (nr==0)   {                      /* Elfogytak a kérelmezések.    */
+        if (!d)   return -1;            /* Nem használható fel újra.    */
+        nr = c;                         /* Mindet újra engedélyezi.     */
+        for (var i=0; i<c; i++)   {
+            D_str[b+i] = SET(D_str[b+i],0,"N");
+        }
+    }
+    var r = RND(nr);
+    for (var i=0; i<c; i++)   {         /* Megkeresi az r-edik szabad   */
+        if (D_str[b+i].charAt(0)=="N")   {        /* kérelmezést.       */
+            if (r--==0)   R = b+i;
+        }
+    }
+    return R;
+} /* RNDEVT() */
+
+function REQUEST()   {                  /***** Audiencia.           *****/
+    R = RNDEVT(0,24,true);              /* Szabad kérelmezést keres.    */
+    var GS = Math.floor(R/8) + 1;       /* A kérelmezõ sorszáma.        */
+
+    var bld = "Kihallgatás";
+    var txt = "Kérelmezõk: <i>" + G_str[GS].substr(5) + "</i><br/>"
+            + "Kérjük Excellenciádat: " + D_str[R].substr(17) + "<hr/>";
+
+    txt = ADVICE(R,txt);                /* A döntés lehetséges hatásai. */
+    var btn = "YN";
+    if (CST && BK<CST || MCST && BK<=0)   btn = "OK";       /* Nincs $. */
+    IO(btn,bld,txt);
+} /* REQUEST() */
+
+function ADVICE(R,txt)   {    /***** Döntéselõkészítõ tanács.       *****/
+    CST  = 10 * (D_str[R].charCodeAt(1)-77);      /* Egyszeri költség.  */
+    MCST =      (D_str[R].charCodeAt(2)-77);      /* Havi költség.      */
+
+    if (!CST && !MCST)   {
+        txt += "Nem kerül pénzbe.";
+    }   else   {
+        txt += "Ez a döntés a kincstárnak";
+        if (CST>0)   txt += " plusz";
+        if (CST<0)   txt += " minusz";
+        if (CST) txt += " "+Math.abs(CST)+"000$";
+        if (CST && MCST)   txt += " és";
+        if (MCST>0)  txt += " csökkenti";
+        if (MCST<0)  txt += " növeli";
+        if (MCST) txt += " a havi kiadásait " + Math.abs(MCST)+"000$-ral";
+        txt += ".";
+    }
+
+    /*** Erõk és népszerûségek változása a döntés nyomán.             ***/
+    var GSP = document.getElementById("Gsp");
+    GSP.style.visibility = "visible";
+    for (var a=1; a<=8; a++)   {
+        var dnsz = D_str[R].charCodeAt(2+a) - 77;
+        if (dnsz==0)   dnsz = "";
+        GSP.rows[a].cells[0].innerHTML = dnsz;
+        var dero = D_str[R].charCodeAt(10+a) - 77;
+        if (a>6)   dero = 0;
+        if (dero==0)   dero = "";
+        GSP.rows[a].cells[2].innerHTML = dero;
+    }
+    if (CST && BK<CST || MCST && BK<=0)   {       /*** Nincs rá pénz. ***/
+        txt += "<hr/>Ehhez a döntéshez nincs elég pénz a kincstárban.<br/>";
+        if (D_str[37].charAt(0)=='N')   {
+            txt += "Talán az oroszok tudnak segíteni?<br/>"
+        }
+        if (D_str[38].charAt(0)=='N')   {
+            txt += "Az amerikaiak nagylelkû nép.<br/>"
+        }
+    }
+    return txt;
+} /* ADVICE() */
+
+function TRANSFER(rc)   {               /***** Kérelem végrehajtása.*****/
+    if (rc!=+1 && R<24)   REQ_NO();     /* Elutasított kérelem.         */
+    if (rc!=+1)   return;
+    D_str[R] = SET(D_str[R],0,"*");     /* Felhasznált kérelem.         */
+    for (var a=1; a<=8; a++)   {        /* Népszerûségek frissítése.    */
+        var dnsz = D_str[R].charCodeAt(2+a) - 77; /* Népszerûség vált.  */
+        if (dnsz==0)   continue;                  /* Nem változik.      */
+        G_str[a] = ADD(G_str[a],0,dnsz);
+    }
+    for (var a=1; a<=6; a++)   {        /* Erõk frissítése.             */
+        var dero = D_str[R].charCodeAt(10+a) - 77;/* Erõ változása.     */
+        if (dero==0)   continue;                  /* Nem változik.      */
+        G_str[a] = ADD(G_str[a],1,dero);
+    }
+    BK  += CST;                         /* Egyszeri költség.            */
+    MPY -= MCST;                        /* Havonkénti költség.          */
+    if (MPY<0)   MPY = 0;
+    ACCOUNT();
+} /* TRANSFER() */
+
+function REQ_NO()   {                   /***** Kérelem elutasítva.  *****/
+    var GS = Math.floor(R/8) + 1;       /* A kérelmezõ sorszáma.        */
+    var dnsz = D_str[R].charCodeAt(2+GS) - 77;    /* Népszerûség vált.  */
+    G_str[GS] = ADD(G_str[GS],0,-dnsz);
+    D_str[R] = SET(D_str[R],0,"*");     /* Felhasznált kérelem.         */
+} /* REQ_NO() */
+
+function ASSASSIN()   {                 /***** Merénylet.           *****/
+    var bld = "Merénylet";
+    PLOT();
+    R = RND(3)+1;                       /* A merénylõ csoport.          */
+    if (G_str[R].charAt(2)!='A')   {
+        JR(1);
+        return;
+    }
+    var txt = "Merényletet követ el "+G_str[R].substr(5).toLowerCase()+" egy tagja.<hr/>";
+    var X = G_str[1].charAt(2)+G_str[2].charAt(2)+G_str[3].charAt(2);
+    if (X=="AAA")   {
+        txt += "Meghaltál!";
+        go = -1;
+    }   else   {
+        txt += "A merénylet nem sikerült.";
+    }
+    IO("OK",bld,txt);
+} /* ASSASSIN() */
+
+function WARSMO()   {                   /***** Háború Leftotóval.   *****/
+    var nsz = G_str[5].charAt(0);       /* Leftotói népszerûség.        */
+    var ero = G_str[5].charAt(1);       /* Leftotói erõ.                */
+    if (LOW<nsz || ero<LOW)   {
+        JR(1);
+        return;
+    }
+    if (RND(3))   {                     /*** Háború veszélye.         ***/
+        var bld = "Háború veszélye Leftotóval";
+        var txt = "Az Ön népszerûsége Ritimbában nõni fog.";
+        G_str[1] = ADD(G_str[1],0,1);
+        G_str[2] = ADD(G_str[2],0,1);
+        G_str[3] = ADD(G_str[3],0,1);
+        G_str[6] = ADD(G_str[6],0,1);
+        IO("OK",bld,txt);
+        return;
+    }
+    var bld = "Háború Leftotóval";
+    var txt = "Leftoto támad.<br/>";
+    var RS = ST;                        /* Ritimbai erõk.               */
+    if (G_str[1].charAt(0)>LOW)   RS += parseInt(G_str[1].charAt(1));
+    if (G_str[2].charAt(0)>LOW)   RS += parseInt(G_str[2].charAt(1));
+    if (G_str[3].charAt(0)>LOW)   RS += parseInt(G_str[3].charAt(1));
+    if (G_str[6].charAt(0)>LOW)   RS += parseInt(G_str[6].charAt(1));
+    txt += "Ritimbai erõk: " + RS + "<br/>";
+    var LS = 0;                         /* Leftotói erõk.               */
+    for (var a=1; a<=6; a++)   {
+        if (G_str[a].charAt(0)<=LOW)   LS += parseInt(G_str[a].charAt(1));
+    }
+    txt += "Leftotói erõk: " + LS + "<br/>";
+    txt += "Rövid, döntõ háború<br/>";
+    if (LS+RND(3)-1<RS)   {
+        txt += "Leftoto visszavonult";
+        G_str[5] = SET(G_str[5],1,0);
+        IO("OK",bld,txt);
+        return;
+    }
+    txt += "Leftoto gyõzött.<br/>";
+    if (D_str[35].charAt(0)=="*")   {   /* Menekülés helikopterrel.     */
+        txt += "Ön helikopterrel elmenekül.<br/>";
+        if (RND(3))   {                 /* Sikeres menekülés.           */
+            go = +1;                    /* Játék vége életben.          */
+            IO("OK",bld,txt);
+            return;
+        }
+    }
+    txt += "Helikopter motorhiba.<br/>";
+    txt += "Önt kikiáltják a nép ellenségének, ezután kivégzik.<br/>";
+    go = -1;                            /* Játék vége holtan.           */
+    IO("OK",bld,txt);
+} /* WARSMO() */
+
+function DECSN1()   {
+    var bld = "Elnöki döntés";
+    var txt = "Próbáljon...";
+    txt += "<form name='dcd'>";
+    txt += "<input type='radio' name='dec' value='1'/> Kedvezni egy csoportnak <br/>";
+    txt += "<input type='radio' name='dec' value='2'/> Kedvezni mindenkinek <br/>";
+    txt += "<input type='radio' name='dec' value='3'/> Javítani az esélyeit <br/>";
+    txt += "<input type='radio' name='dec' value='4'/> Készpénzt felvenni <br/>";
+    txt += "<input type='radio' name='dec' value='5'/> Erõsíteni egy csoportot <br/>";
+    txt += "<input type='radio' name='dec' value='0' checked='1'/> ...kihagy... <br/>";
+    txt += "</form>";
+    IO("OK",bld,txt);
+} /* DECSN1() */
+
+function DECSN2()   {                   /***** Elnöki döntéshozás.  *****/
+    var bld = "Elnöki döntés";
+    var K = parseInt(document.dcd.dec.value);     /* A döntéscsoport.   */
+    if (!K)   {                         /* Döntés kihagyva.             */
+        JR(3);
+        return;
+    }
+    var IDX = " -36:=@";
+    var l = IDX.charCodeAt(K)   - 21;
+    var h = IDX.charCodeAt(K+1) - 21;
+    var o = true;
+    txt = "<form name='dcd'>";
+    for (var a=l; a<h; a++)   {         /* A csoport döntései.          */
+        if (D_str[a].charAt(0)=="*")   continue;  /* Már felhasznált.   */
+        o = false;
+        txt += "<input type='radio' name='dec' value='"+a+"' checked='1'/>"+D_str[a].substr(17)+"<br/>";
+    }
+    if (o)   {
+        txt += "Minden lehetõség kimerítve."
+             + "<input type='hidden' name='dec' value='0'/>";
+    }
+    txt += "</form>";
+    IO("OK",bld,txt);
+} /* DECSN2() */
+
+function DECSN3()   {                   /*** Döntés következmémyei.   ***/
+    R = parseInt(document.dcd.dec.value);         /* A döntés.          */
+    switch (R)   {
+        case  0: JR(2);    return;      /* Nincs döntési lehetõség.     */
+        case 36: XFERCH(); return;      /* Átutalás svájci bankszámlára.*/
+        case 37:                        /* RU, US kölcsön.              */
+        case 38: ASKAID(); return;
+    }
+    var bld = "Elnöki döntés";
+    var txt = D_str[R].substr(17) + "<hr/>";
+    txt = ADVICE(R,txt);                /* A döntés lehetséges hatásai. */
+    var btn = "YN";
+    if (CST && BK<CST || MCST && BK<=0)   btn = "OK";       /* Nincs $. */
+    IO(btn,bld,txt);
+} /* DECSN3() */
+
+function DECSN4(rc)   {
+    TRANSFER(rc);                       /* Döntés végrehajtása.         */
+    JR(1);
+} /* DECSN4() */
+
+function REVOL0()   {                   /***** Forradalmi helyzet.  *****/
+    PLOT();
+    for (var a=0; a<3; a++)   {
+        var r = 1 + RND(3);
+        if (G_str[r].charAt(2)=="R")   return r;
+    }
+    return -1;
+} /* REVOL0() */
+
+function REVOL1()   {                   /***** Forradalom.          *****/
+    R = REVOL0();
+    if (R==-1)   {
+        JR(5);
+        return;
+    }
+    var bld = "Forradalom";
+    var txt = "Akar menekülni?"
+    IO("YN",bld,txt);
+} /* REVOL1() */
+
+function REVOL2(rc)   {                 /*** Forradalom: menekülés.   ***/
+    if (rc==-1)   {
+        JR(1);
+        return;
+    }
+    var bld = "Forradalom";
+    var txt = "";
+    if (D_str[35].charAt(0)=="*")   {   /*** Menekülés helikopterrel. ***/
+        if (RND(3))   {                 /* Sikeres menekülés.           */
+            txt = "Elmenekült helikopterrel.";
+            go = +1;                    /* Játék vége életben.          */
+            IO("OK",bld,txt);
+            return;
+        }
+        txt = "A helikopter nem indul.<br/>";
+    }
+    txt += "Át kell jutni a hegyeken át Leftotoba<br/>";
+    var ero = parseInt(G_str[4].charAt(1));       /* A gerillák ereje.  */
+    if (RND(ero/3)==0)   {              /* Sikeres menekülés.           */
+        txt += "A gerillák nem fogták el.";
+        go = +1;                        /* Játék vége életben.          */
+        IO("OK",bld,txt);
+        return;
+    }
+    txt += "A gerillák ünnepelnek.";
+    go = -1;                            /* Játék vége holtan.           */
+    IO("OK",bld,txt);
+} /* REVOL2() */
+
+function REVOL3()   {                   /*** Forradalom: harc.        ***/
+    var bld = "Forradalom";
+    var Q   = parseInt(G_str[R].charAt(3));
+    var ero = parseInt(G_str[R].charAt(1)) + parseInt(G_str[Q].charAt(1));
+    var txt = G_str[R].substr(5)+" és "+G_str[Q].substr(5).toLowerCase()+" összefogtak.<br/>"
+            + "A forradalmárok ereje: "+ero+"<br/><hr/>"
+            + "Kitõl kérsz segítséget?<br/>"
+            + "<form name='dcd'>";
+    var Z = true;
+    for (var a=1; a<=6; a++)   {
+        if (G_str[a].charAt(0)<=LOW)   continue;
+        txt += "<input type='radio' name='dec' value='"+a+"' checked='1'/>"+G_str[a].substr(5)+"<br/>";
+        Z = false;
+    }
+    txt += "</form>";
+    if (Z)   {                          /* Egyedül maradt.              */
+        JR(1);
+        return;
+    }
+    IO("OK",bld,txt);
+} /* REVOL3() */
+
+function REVOL4()   {
+    H = 0;
+    if (document.dcd!=null)   H = document.dcd.dec.value;
+    var bld = "Forradalom";
+    var Q   = parseInt(G_str[R].charAt(3));
+    var ero = parseInt(G_str[R].charAt(1)) + parseInt(G_str[Q].charAt(1));
+    var txt = G_str[R].substr(5)+" és "+G_str[Q].substr(5).toLowerCase()+" összefogtak.<br/>"
+            + "A forradalmárok ereje: "+ero+"<br/><hr/>";
+    if (H==0)   txt += "Egyedül maradt.<br/>";
+    txt += "Az Ön ereje: " + ST + "<br/>";
+    var hero = 0;
+    if (H)   {
+        hero = parseInt(G_str[H].charAt(1));
+        txt += G_str[H].substr(5) + " ereje: " + hero + "<br/>";
+    }
+    txt += "<hr/>Kitört a forradalom.<br/>";
+    if (ero>ST+hero+RND(3)-1)   {
+        txt += "Megdöntötték a hatalmát és Önt likvidálták.<br/>";
+        go = -1;                            /* Játék vége holtan.           */
+        IO("OK",bld,txt);
+        return;
+    }
+    txt += "A lázadást leverték.<br/>"
+         + "Megbünteti a forradalmárokat?";
+    IO("YN",bld,txt);
+} /* REVOL4() */
+
+function REVOL5(rc)   {
+    if (rc==+1)   {
+        var Q = parseInt(G_str[R].charAt(3));
+        G_str[R] = SET(G_str[R],0,0);
+        G_str[R] = SET(G_str[R],1,0);
+        G_str[Q] = SET(G_str[Q],0,0);
+        G_str[Q] = SET(G_str[Q],1,0);
+    }
+    if (H)   G_str[H] = SET(G_str[H],1,9);
+    PC = MTH+2;
+    JR(1);
+} /* REVOL5() */
+
+function XFERCH()   {         /***** Átutalás svájci bankszámlára.  *****/
+    var bld = "Átutalás svájci bankszámlára";
+    var txt = null;
+    var X = Math.floor(BK/2);           /* A kincstár felét utalja.     */
+    if (X>0)   {
+        txt = "A kincstárban volt "+BK+"000$.<br/>"
+            + X+"000$ lett átutalva.";
+        BK -= X;                        /* Kincstárat csökkenti.        */
+        SW += X;                        /* Bankszámlához adja.          */
+        ACCOUNT();                      /* Pénzügyek kijelzése.         */
+    }   else   {
+        txt = "Nem történt átutalás.";
+    }
+    IO("OK",bld,txt);
+} /* XFERCH() */
+
+function ASKAID()   {         /***** RU (37), US (38) kölcsönkérés. *****/
+    var bld = "Külföldi segély kérelmezése";
+    if (MTH<RND(5)+3)   {
+        var txt = "Még túl korai segélyt kérni";
+        IO("OK",bld,txt);
+        return;
+    }
+    if (D_str[R].charAt(0)=='*')   {    /* Már kaptunk tõlük pénzt.     */
+        var txt = "Sajnáljuk, de nincs több kölcsön.";
+        IO("OK",bld,txt);
+        return;
+    }
+    var nsz = parseInt(G_str[R-30].charAt(0));
+    if (nsz<=LOW)   {                   /* Nem elég a népszerûségünk.   */
+        if (R==37)   txt = "Nyet!";
+        if (R==38)   txt = "Egy frászt!";
+        IO("OK",bld,txt);
+        return;
+    }
+    var Y = 30*nsz + RND(200);                    /* A kapott összeg.   */
+    D_str[R] = SET(D_str[R],0,"*");               /* Kölcsön elhasználva*/
+    BK += Y;                                      /* Kincstárhoz adja.  */
+    ACCOUNT();                                    /* Pénzügyek kijelzése*/
+    if (R==37)   txt = "Az oroszok";
+    if (R==38)   txt = "Az amerikaiak";
+    txt += " adnak neked "+Y+"000 dollárt.";
+    IO("OK",bld,txt);
+} /* ASKAID() */
+
+function GMOVER(alive)   {              /***** A játék vége.        *****/
+    var nsz = 0;                        /* A népszerûségek összege.     */
+    for (var a=1; a<=8; a++)   {
+        nsz += parseInt(G_str[a].charAt(0));
+    }
+    var P = nsz + 3*MTH;                /* Elért pontszám.              */
+    if (alive)   P += 10 + Math.floor(SW/10);     /* Életben + pénz.    */
+    var bld = "Elnöki mûködésének eredménye";
+    var txt = "Össz-népszerûség: " + nsz + " pont <br/>"
+            + "Hivatali hónapok: " + MTH + "*3 pont<br/>";
+    if (alive==+1)   {
+        txt += "Az életben maradásért: 10 pont<br/>"
+             + "A pénzszerzésért: " + Math.floor(SW/10) + " pont <br/>";
+    }
+    txt += "<hr/>Összes pontszám: " + P;
+    go = 0;
+    IO("OK",bld,txt);
+} /* GMOVER() */
+
+function NEWS()   {                     /***** Híradás.             *****/
+    var bld = "Híradás";
+    R = -1;
+    if (RND(3)==0)   R = RNDEVT(43,6,false);
+    if (R==-1)   {
+        JR(1);
+        return;
+    }
+    TRANSFER(+1);
+    var txt = D_str[R].substr(17);
+    IO("OK",bld,txt);
+} /* NEWS() */
+</script>
+
+<style type="text/css">
+body { -webkit-text-size-adjust: 100%; }
+*   {
+    font-family:    "Verdana";
+    font-size:      4vh;
+}
+body   {
+    background: #89D;
+}
+div   {
+    border: 1px #000 solid;
+    width:  100%;
+}
+h1   {
+    text-align: center;
+    margin:     2px;
+}
+#Btn   {
+    text-align: center;
+}
+.small   {
+    font-size: 20px;
+}
+.Le { text-align: left;   }
+.Ce { text-align: center; }
+.Ri { text-align: right;  }
+.B  { font-weight: bold;  }
+input[type="button"]   {
+    width: 25vw;
+}
+input[type="radio"]   {
+    width:  1em;
+    height: 1em;
+}
+#Gsp   {
+    visibility: hidden;
+    background: #000;
+    color:      #fff;
+}
+</style>
+
+</head>
+<body onload="LoadCB()">
+
+<div id="Scr">
+<span><b id="MTH">*</b>. hónap</span>
+<h1 id="Bold"></h1>
+<p id="Text"> </p>
+
+<div id="Btn">
+    <input type="button" id="BY" value="Igen" onclick="DO(+1)"/>
+    <input type="button" id="OK" value=" OK " onclick="DO(0)"/>
+    <input type="button" id="BN" value="Nem"  onclick="DO(-1)"/>
+</div>
+
+<table id="Acc">
+    <tr> <td class="Ri"> Kincstár:          </td> <td id="BK"  class="Ri B"> </td> <td> $ </td> </tr>
+    <tr> <td class="Ri"> Havi kiadások:     </td> <td id="MPY" class="Ri B"> </td> <td> $ </td> </tr>
+    <tr> <td class="Ri"> Svájci bankszámla: </td> <td id="SW"  class="Ri B"> </td> <td> $ </td> </tr>
+</table>
+
+<table id="Gsp" style="width: 100%">
+<tr>
+    <th style="width: 40%;"> Népsz.  </th>
+    <th style="width: 20%;"> Csoport </th>
+    <th style="width: 40%;"> Erõ     </th>
+</tr>
+<tr> <td class="Ri"> </td> <th> Hadsereg   </th> <td class="Le"> </td> </tr>
+<tr> <td class="Ri"> </td> <th> Parasztok  </th> <td class="Le"> </td> </tr>
+<tr> <td class="Ri"> </td> <th> Földesurak </th> <td class="Le"> </td> </tr>
+<tr> <td class="Ri"> </td> <th> Gerillák   </th> <td class="Le"> </td> </tr>
+<tr> <td class="Ri"> </td> <th> Leftotoiak </th> <td class="Le"> </td> </tr>
+<tr> <td class="Ri"> </td> <th> Rendõrség  </th> <td class="Le"> </td> </tr>
+<tr> <td class="Ri"> </td> <th> Oroszok    </th> <td class="Le"> </td> </tr>
+<tr> <td class="Ri"> </td> <th> Amerikaiak </th> <td class="Le"> </td> </tr>
+</table>
+
+</div>
+
+</body>
+</html>
