@@ -7,8 +7,6 @@
 <head>
 <title>DIKTÁTOR</title>
 <script type="text/javascript">
-/***** DIKTÁTOR  (c) 1984 ENTERSOFT LTD.  Magyar szöveg: Koch Tibor *****/
-/* http://www.ep128.hu/Games/Dictator.htm                               */
 
 function RND(n)   {           /***** Véletlen szám. 0<= RND <n      *****/
     return Math.floor(Math.random()*n);
@@ -27,12 +25,6 @@ function ADD(s,i,a)   {       /***** Számjegy növelése.             *****/
     if (9<d)   d = 9;                   /* Túlcsordulás.                */
     return SET(s,i,d);
 } /* ADD() */
-
-function MUL(s,n)   {         /***** String többszörözése.          *****/
-    var S = "";
-    for (var i=0; i<n; i++)   S += s;
-    return S;
-} /* MUL() */
 
 /* Népszerűség Erő */
 var G_str = new Array( null,
@@ -147,10 +139,8 @@ function DO(rc)   {
         case  1: NXTMON();   break;     /* Hónapváltás.                 */
         case  2: REPORT(0);  break;     /* Jelentés államcsőd után.     */
         case  3: REQUEST();  break;     /* Kérelmezés.                  */
-        case  4:                        /* Válasz a kérelemre.          */
-            TRANSFER(rc);
-            ASSASSIN();                 /* Merénylet.                   */
-            break;
+        case  4: TRANSFER(rc);          /* Válasz a kérelemre.          */
+                 ASSASSIN(); break;     /* Merénylet.                   */
         case  5: WARSMO();   break;     /* Háború Leftotóval.           */
         case  6: ASKREP();   break;     /* Rendőrségi jelentés kérése.  */
         case  7: REPORT(rc); break;     /* Rendőrségi jelentés.         */
@@ -252,11 +242,13 @@ function REPORT(rc)   {       /***** A titkosrendőrség jelentése.   *****/
     if (rc==2)   {                      /*** Teljes értékű jelentés.  ***/
         var GSP = document.getElementById("Gsp");
         GSP.style.visibility = "visible";
+        var NN = "987654321";
+        var EE = "123456789";
         for (var a=1; a<=8; a++)   {
             var nsz = G_str[a].charAt(0);
             var ero = G_str[a].charAt(1);
-            GSP.rows[a].cells[0].innerHTML = "<span class='small'>"+MUL("&#x1F7E0;",nsz)+"</span>";
-            GSP.rows[a].cells[2].innerHTML = "<span class='small'>"+MUL("&#x1F7E2;",ero)+"</span>";
+            GSP.rows[a].cells[0].innerHTML = "<span class='grn'>"+NN.substr(9-nsz,nsz)+"</span>";
+            GSP.rows[a].cells[2].innerHTML = "<span class='red'>"+EE.substr(0,ero)+"</span>";
         }
         txt  = "Az Ön ereje: "        + ST + "<br/>";
         txt += "A forradalmi erőké: " + STR;
@@ -349,10 +341,12 @@ function ADVICE(R,txt)   {    /***** Döntéselőkészítő tanács.       *****
     for (var a=1; a<=8; a++)   {
         var dnsz = D_str[R].charCodeAt(2+a) - 77;
         if (dnsz==0)   dnsz = "";
+        if (dnsz>0)    dnsz = "+"+dnsz;
         GSP.rows[a].cells[0].innerHTML = dnsz;
         var dero = D_str[R].charCodeAt(10+a) - 77;
         if (a>6)   dero = 0;
         if (dero==0)   dero = "";
+        if (dero>0)    dero = "+"+dero;
         GSP.rows[a].cells[2].innerHTML = dero;
     }
     if (CST && BK<CST || MCST && BK<=0)   {       /*** Nincs rá pénz. ***/
@@ -734,13 +728,13 @@ h1   {
 #Btn   {
     text-align: center;
 }
-.small   {
-    font-size: 20px;
-}
 .Le { text-align: left;   }
 .Ce { text-align: center; }
 .Ri { text-align: right;  }
 .B  { font-weight: bold;  }
+.grn { background-color: #0f0; color: #000; }
+.red { background-color: #f00; color: #000; }
+.ylw { background-color: #ff0; color: #000; }
 input[type="button"]   {
     width: 25vw;
 }
@@ -781,14 +775,14 @@ input[type="radio"]   {
     <th style="width: 20%;"> Csoport </th>
     <th style="width: 40%;"> Erő     </th>
 </tr>
-<tr> <td class="Ri"> </td> <th> Hadsereg   </th> <td class="Le"> </td> </tr>
-<tr> <td class="Ri"> </td> <th> Parasztok  </th> <td class="Le"> </td> </tr>
-<tr> <td class="Ri"> </td> <th> Földesurak </th> <td class="Le"> </td> </tr>
-<tr> <td class="Ri"> </td> <th> Gerillák   </th> <td class="Le"> </td> </tr>
-<tr> <td class="Ri"> </td> <th> Leftotoiak </th> <td class="Le"> </td> </tr>
-<tr> <td class="Ri"> </td> <th> Rendőrség  </th> <td class="Le"> </td> </tr>
-<tr> <td class="Ri"> </td> <th> Oroszok    </th> <td class="Le"> </td> </tr>
-<tr> <td class="Ri"> </td> <th> Amerikaiak </th> <td class="Le"> </td> </tr>
+<tr> <td class="Ri"> </td> <th class="ylw"> Hadsereg   </th> <td class="Le"> </td> </tr>
+<tr> <td class="Ri"> </td> <th class="ylw"> Parasztok  </th> <td class="Le"> </td> </tr>
+<tr> <td class="Ri"> </td> <th class="ylw"> Földesurak </th> <td class="Le"> </td> </tr>
+<tr> <td class="Ri"> </td> <th class="ylw"> Gerillák   </th> <td class="Le"> </td> </tr>
+<tr> <td class="Ri"> </td> <th class="ylw"> Leftotoiak </th> <td class="Le"> </td> </tr>
+<tr> <td class="Ri"> </td> <th class="ylw"> Rendőrség  </th> <td class="Le"> </td> </tr>
+<tr> <td class="Ri"> </td> <th class="ylw"> Oroszok    </th> <td class="Le"> </td> </tr>
+<tr> <td class="Ri"> </td> <th class="ylw"> Amerikaiak </th> <td class="Le"> </td> </tr>
 </table>
 
 </div>
